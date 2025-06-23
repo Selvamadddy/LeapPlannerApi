@@ -10,6 +10,11 @@ using AutoMapper;
 using LeapPlannerApi.Mapper;
 using LeapPlannerApi.Service.Planner;
 using LeapPlannerApi.Repository.Planner;
+using LeapPlannerApi.Service.Common;
+using LeapPlannerApi.Service.TaskCard;
+using LeapPlannerApi.Repository.TaskCard;
+using LeapPlannerApi.Service.Task;
+using LeapPlannerApi.Repository.Task;
 
 namespace LeapPlannerApi
 {
@@ -32,21 +37,26 @@ namespace LeapPlannerApi
             {
                 options.AddPolicy("AllowAllOrigins",
                 policyBuilder => policyBuilder.AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowAnyOrigin()
-                //.AllowCredentials()
-                .SetIsOriginAllowed(_ => true)
+                    .AllowAnyMethod()
+                    .AllowAnyOrigin()
+                    //.AllowCredentials()
+                    .SetIsOriginAllowed(_ => true)
                  );
             });
 
             #region Configure services
             services.AddScoped<ILoginService, LoginService>();
             services.AddScoped<IPlannerService, PlannerService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ITaskCardService, TaskCardService>();
+            services.AddScoped<ITaskService, TaskService>();
             #endregion  Configure services
 
             #region Configure repo
             services.AddScoped<ILoginRepo, LoginRepo>();
             services.AddScoped<IPlannerRepo, PlannerRepo>();
+            services.AddScoped<ITaskCardRepo, TaskCardRepo>();
+            services.AddScoped<ITaskRepo, TaskRepo>();
             #endregion configure repo
 
             #region Add mapper
@@ -54,8 +64,9 @@ namespace LeapPlannerApi
             {
                 mc.AddProfile(new LoginMapper());
                 mc.AddProfile(new PlannerMapper());
+                mc.AddProfile(new TaskCardMapper());
+                mc.AddProfile(new TaskMapper());
             });
-
             IMapper mapper = mapperConfig.CreateMapper();
             services.AddSingleton(mapper);
             #endregion Add mapper

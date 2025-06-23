@@ -70,6 +70,7 @@ namespace LeapPlannerApi.Service.Common
     {
         BadRequest,
         InternalServerError,
-        InvalidProcess
+        InvalidProcess,
+        UnAuthorized
     }
 }

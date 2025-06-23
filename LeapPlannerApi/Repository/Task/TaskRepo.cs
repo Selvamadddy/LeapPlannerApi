@@ -1,29 +1,28 @@
 ﻿using Dapper;
-using LeapPlannerApi.Entities.Planner;
-using System;
+using LeapPlannerApi.Entities.Task;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace LeapPlannerApi.Repository.Planner
+namespace LeapPlannerApi.Repository.Task
 {
-    public class PlannerRepo : IPlannerRepo
+    public class TaskRepo : ITaskRepo
     {
         private readonly DapperContext _context;
-        public PlannerRepo(DapperContext context)
+        public TaskRepo(DapperContext context)
         {
             _context = context;
         }
 
-        public async Task<List<PlannerDetail>> GetAllPlanner(int userId)
+        public async Task<List<TaskDetail>> GetAllTask(int taskCardId)
         {
-            List<PlannerDetail> response = new List<PlannerDetail>();
+            List<TaskDetail> response = new();
             try
             {
                 using (var connection = _context.CreateConnection())
                 {
-                    var data = await connection.QueryAsync<PlannerDetail> ("GetUserPlanners", new { userId = userId }, commandType: System.Data.CommandType.StoredProcedure);
-                    response = data.ToList();
+                    var data = await connection.QueryAsync<TaskDetail>("GetAllTask", new { taskCardId = taskCardId }, commandType: System.Data.CommandType.StoredProcedure);
+                    response = data?.ToList();
                 }
             }
             catch
@@ -33,14 +32,14 @@ namespace LeapPlannerApi.Repository.Planner
             return response;
         }
 
-        public async Task<bool> AddPlanner(int userId, string name)
+        public async Task<bool> AddTask(int taskCardId)
         {
             bool response = false;
             try
             {
                 using (var connection = _context.CreateConnection())
                 {
-                    var data = await connection.ExecuteAsync("AddPlanner", new { userId = userId, name = name }, commandType: System.Data.CommandType.StoredProcedure);
+                    var data = await connection.ExecuteAsync("AddTask", new { taskCardId = taskCardId }, commandType: System.Data.CommandType.StoredProcedure);
                     response = data > 0;
                 }
             }
@@ -51,14 +50,14 @@ namespace LeapPlannerApi.Repository.Planner
             return response;
         }
 
-        public async Task<bool> UpdatePlannerName(int id, string updatedName, int userId)
+        public async Task<bool> UpdateTask(int id, string text, bool isChecked)
         {
             bool response = false;
             try
             {
                 using (var connection = _context.CreateConnection())
                 {
-                    var data = await connection.ExecuteAsync("UpdatePlannersName", new { id = id, name = updatedName, userId = userId }, commandType: System.Data.CommandType.StoredProcedure);
+                    var data = await connection.ExecuteAsync("UpdateTask", new { id = id, text = text, isChecked = isChecked }, commandType: System.Data.CommandType.StoredProcedure);
                     response = data > 0;
                 }
             }
@@ -69,14 +68,14 @@ namespace LeapPlannerApi.Repository.Planner
             return response;
         }
 
-        public async Task<bool> DeletePlanner(int id, int userId)
+        public async Task<bool> DeleteTask(int id)
         {
             bool response = false;
             try
             {
                 using (var connection = _context.CreateConnection())
                 {
-                    var data = await connection.ExecuteAsync("DeletePlanners", new { id = id, userId = userId }, commandType: System.Data.CommandType.StoredProcedure);
+                    var data = await connection.ExecuteAsync("DeleteTask", new { id = id }, commandType: System.Data.CommandType.StoredProcedure);
                     response = data > 0;
                 }
             }

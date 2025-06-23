@@ -1,13 +1,11 @@
 ﻿using LeapPlannerApi.Entities.Login;
 using LeapPlannerApi.Repository.Login;
+using LeapPlannerApi.Service.Common;
+using LeapPlannerApi.Service.Planner;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace LeapPlannerApi.Service.Login
@@ -15,12 +13,14 @@ namespace LeapPlannerApi.Service.Login
     public class LoginService : ILoginService
     {
         private ILoginRepo _loginRepo;
-        private IConfiguration _configuration;
+        private ITokenService _tokenService;
+        private IPlannerService _plannerService;
 
-        public LoginService(ILoginRepo loginRepo, IConfiguration configuration)
+        public LoginService(ILoginRepo loginRepo, ITokenService tokenService, IPlannerService plannerService)
         {
-            _configuration = configuration;
             _loginRepo = loginRepo;
+            _tokenService = tokenService;
+            _plannerService = plannerService;
         }
 
         public async Task<bool> AddUser(RegisterUserDto registerUser)
@@ -33,6 +33,10 @@ namespace LeapPlannerApi.Service.Login
                     Name = registerUser.Name,
                     Password = HashPassword(registerUser.Password)
                 });
+                if (response)
+                {
+                    await _plannerService.AddPlanner(registerUser.Email, "");
+                }
             }
             catch (Exception ex)
             {
@@ -52,7 +56,7 @@ namespace LeapPlannerApi.Service.Login
                     bool isValidPassword = VerifyPassword(user.HashedPassword, loginDto.Password);
                     if (isValidPassword)
                     {
-                        response = GenerateToken(loginDto);
+                        response =  _tokenService.GenerateToken(loginDto);
                     }
                 }
             }
@@ -151,33 +155,6 @@ namespace LeapPlannerApi.Service.Login
             return response;
         }
 
-
-
-
-        private string GenerateToken(LoginDto loginDto)
-        {
-            try
-            {
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetValue<string>("Jwt:Key")));
-                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-                var claims = new[]
-                {
-                new Claim("Email",loginDto.Email)
-                };
-
-                var token = new JwtSecurityToken(_configuration.GetValue<string>("Jwt:Issuer"), null,
-                    claims,
-                    expires: DateTime.Now.AddMinutes(_configuration.GetValue<double>("Jwt:LifeSpan")),
-                    signingCredentials: credentials);
-
-                return new JwtSecurityTokenHandler().WriteToken(token);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
         private string HashPassword(string password)
         {
             // 1. Generate a salt
@@ -225,13 +202,6 @@ namespace LeapPlannerApi.Service.Login
             {
                 return false;
             }
-        }
-
-        private string CreateOtp()
-        {
-            Random rnd = new Random();
-            int otp = rnd.Next(111111, 999999);
-            return HashPassword(otp.ToString());
         }
     }
 }

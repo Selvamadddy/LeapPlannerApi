@@ -1,9 +1,8 @@
 ﻿using AutoMapper;
 using LeapPlannerApi.Model.Common;
-using LeapPlannerApi.Model.Planner;
-using LeapPlannerApi.Model.Planner.model;
+using LeapPlannerApi.Model.TaskCard;
 using LeapPlannerApi.Service.Common;
-using LeapPlannerApi.Service.Planner;
+using LeapPlannerApi.Service.TaskCard;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -11,68 +10,69 @@ using System.Threading.Tasks;
 namespace LeapPlannerApi.Controllers
 {
     [ApiController]
-    public class PlannerController : ControllerBase
+    public class TaskCardController : ControllerBase
     {
-        private IPlannerService _plannerService;
+        private ITaskCardService _taskCardService;
         private readonly IMapper _mapper;
         private ITokenService _tokenService;
 
-        public PlannerController(IPlannerService plannerService, IMapper mapper, ITokenService tokenService)
+        public TaskCardController(ITaskCardService taskCardService, IMapper mapper, ITokenService tokenService)
         {
-            _plannerService = plannerService;
+            _taskCardService = taskCardService;
             _mapper = mapper;
             _tokenService = tokenService;
         }
 
-        [Route("api/planner/GetAllPlanners")]
-        [HttpGet]
-        public async Task<GetAllPlannersReply> GetAllPlanners()
-        {
-            GetAllPlannersReply reply = new GetAllPlannersReply();
-            try
-            {
-                (bool isAuthorizedUser, string email) = _tokenService.ValidateToken(Request.Headers);
-                if (isAuthorizedUser)
-                {
-                    if (!string.IsNullOrEmpty(email))
-                    {
-                        var response = await _plannerService.GetAllPlanner(email);
-                        reply = ResponseService.UpdateSucess<GetAllPlannersReply>();
-                        if (response != null && response.Count > 0)
-                        {                
-                            reply.Planners = _mapper.Map<List<PlannerDetail>>(response);
-                        }
-                    }
-                    else
-                    {
-                        reply = ResponseService.UpdateErrorMessage<GetAllPlannersReply>(ErrorMessage.BadRequest.ToString());
-                    }
-                }
-                else
-                {
-                    reply = ResponseService.UpdateErrorMessage<GetAllPlannersReply>(ErrorMessage.UnAuthorized.ToString());
-                }
-            }
-            catch
-            {
-                reply = ResponseService.UpdateErrorMessage<GetAllPlannersReply>(ErrorMessage.InternalServerError.ToString());
-            }
-            return reply;
-        }
-
-        [Route("api/planner/AddPlanner")]
+        [Route("api/taskcard/GetAllTaskCards")]
         [HttpPost]
-        public async Task<ReplyBase> AddPlanner(AddPlanner addPlanner)
+        public async Task<GetAllTaskCardsReply> GetAllTaskCards(GetAllTaskCards getAllTaskCards)
         {
-            ReplyBase reply = new ReplyBase();
+            GetAllTaskCardsReply reply = new GetAllTaskCardsReply();
             try
             {
                 (bool isAuthorizedUser, string email) = _tokenService.ValidateToken(Request.Headers);
                 if (isAuthorizedUser)
                 {
-                    if (!string.IsNullOrEmpty(email))
+                    if (!string.IsNullOrEmpty(email) && getAllTaskCards.PlannerId > 0)
                     {
-                        var response = await _plannerService.AddPlanner(email, addPlanner.Name ?? "");            
+                        var response = await _taskCardService.GetAllTaskCard(getAllTaskCards.PlannerId);
+                        reply = ResponseService.UpdateSucess<GetAllTaskCardsReply>();
+                        if (response != null && response.Count > 0)
+                        {
+                            reply.TaskCards = _mapper.Map<List<TaskCardDetails>>(response);
+                        }
+                    }
+                    else
+                    {
+                        reply = ResponseService.UpdateErrorMessage<GetAllTaskCardsReply>(ErrorMessage.BadRequest.ToString());
+                    }
+                }
+                else
+                {
+                    reply = ResponseService.UpdateErrorMessage<GetAllTaskCardsReply>(ErrorMessage.UnAuthorized.ToString());
+                }
+            }
+            catch
+            {
+                reply = ResponseService.UpdateErrorMessage<GetAllTaskCardsReply>(ErrorMessage.InternalServerError.ToString());
+            }
+            return reply;
+        }
+
+        [Route("api/taskcard/AddTaskCard")]
+        [HttpPost]
+        public async Task<ReplyBase> AddTaskCard(GetAllTaskCards addTaskCard)
+        {
+            ReplyBase reply = new();
+            try
+            {
+                (bool isAuthorizedUser, string email) = _tokenService.ValidateToken(Request.Headers);
+                if (isAuthorizedUser)
+                {
+                    if (!string.IsNullOrEmpty(email) && addTaskCard.PlannerId > 0)
+                    {
+                        var response = await _taskCardService.AddTaskCard(addTaskCard.PlannerId);
+                        
                         if (response)
                         {
                             reply = ResponseService.UpdateSucess<ReplyBase>();
@@ -99,58 +99,60 @@ namespace LeapPlannerApi.Controllers
             return reply;
         }
 
-        [Route("api/planner/UpdatePlanner")]
+        [Route("api/taskcard/UpdateTaskCard")]
         [HttpPut]
-        public async Task<ReplyBase> UpdatePlanner(UpdatePlanner updatePlanner)
+        public async Task<UpdateTaskCardReply> UpdateTaskCard(UpdateTaskCard updateTaskCard)
         {
-            ReplyBase reply = new ReplyBase();
+            UpdateTaskCardReply reply = new();
             try
             {
                 (bool isAuthorizedUser, string email) = _tokenService.ValidateToken(Request.Headers);
                 if (isAuthorizedUser)
                 {
-                    if (!string.IsNullOrEmpty(email) && updatePlanner.Id > 0)
+                    if (!string.IsNullOrEmpty(email) && updateTaskCard.Id > 0)
                     {
-                        var response = await _plannerService.UpdatePlanner(updatePlanner.Id, updatePlanner.Name, email);
+                        var response = await _taskCardService.UpdateTaskCard(updateTaskCard.Id, updateTaskCard.Name, updateTaskCard.Colour);
+
                         if (response)
                         {
-                            reply = ResponseService.UpdateSucess<ReplyBase>();
+                            reply = ResponseService.UpdateSucess<UpdateTaskCardReply>();
                         }
                         else
                         {
-                            reply = ResponseService.UpdateErrorMessage<ReplyBase>(ErrorMessage.InvalidProcess.ToString());
+                            reply = ResponseService.UpdateErrorMessage<UpdateTaskCardReply>(ErrorMessage.InvalidProcess.ToString());
                         }
                     }
                     else
                     {
-                        reply = ResponseService.UpdateErrorMessage<ReplyBase>(ErrorMessage.BadRequest.ToString());
+                        reply = ResponseService.UpdateErrorMessage<UpdateTaskCardReply>(ErrorMessage.BadRequest.ToString());
                     }
                 }
                 else
                 {
-                    reply = ResponseService.UpdateErrorMessage<ReplyBase>(ErrorMessage.UnAuthorized.ToString());
+                    reply = ResponseService.UpdateErrorMessage<UpdateTaskCardReply>(ErrorMessage.UnAuthorized.ToString());
                 }
             }
             catch
             {
-                reply = ResponseService.UpdateErrorMessage<ReplyBase>(ErrorMessage.InternalServerError.ToString());
+                reply = ResponseService.UpdateErrorMessage<UpdateTaskCardReply>(ErrorMessage.InternalServerError.ToString());
             }
             return reply;
         }
 
-        [Route("api/planner/DeletePlanner")]
+        [Route("api/taskcard/DeleteTaskCard")]
         [HttpDelete]
-        public async Task<ReplyBase> DeletePlanner(DeletePlanner deletePlanner)
+        public async Task<ReplyBase> DeleteTaskCard(DeleteTaskCard deleteTaskCard)
         {
-            ReplyBase reply = new ReplyBase();
+            ReplyBase reply = new();
             try
             {
                 (bool isAuthorizedUser, string email) = _tokenService.ValidateToken(Request.Headers);
                 if (isAuthorizedUser)
                 {
-                    if (!string.IsNullOrEmpty(email) && deletePlanner.Id > 0)
+                    if (!string.IsNullOrEmpty(email) && deleteTaskCard.Id > 0)
                     {
-                        var response = await _plannerService.DeletePlanner(deletePlanner.Id, email);
+                        var response = await _taskCardService.DeleteTaskCard(deleteTaskCard.Id);
+
                         if (response)
                         {
                             reply = ResponseService.UpdateSucess<ReplyBase>();
@@ -176,6 +178,5 @@ namespace LeapPlannerApi.Controllers
             }
             return reply;
         }
-
     }
 }
